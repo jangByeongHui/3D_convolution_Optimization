@@ -9,35 +9,6 @@
 #define MASK_WIDTH 5
 #define TILE_SIZE 4
 
-void sequential(const float *N, const float *M, const float *P, int Rows, int Columns, int Height, int k_dim) {
-    int r, c, h, k_r, k_c, k_h;
-    int row_i, col_i, height_i;
-    float* results;
-
-    results = (float*)malloc(Height * Rows * Columns * sizeof(float));
-    memset(results, 0, Height * Rows * Columns * sizeof(float));
-
-    for(h = 0; h < Height; h++){
-        for (r = 0; r < Rows; r++) {
-            for (c = 0; c < Columns; c++) {
-                for(k_h = 0; k_h < k_dim; k_h++){
-                    for (k_r = 0; k_r < k_dim; k_r++) {
-                        for (k_c = 0; k_c < k_dim; k_c++) {
-                            row_i = r - ((k_dim - 1) / 2) + k_r;
-                            col_i = c - ((k_dim - 1) / 2) + k_c;
-                            height_i = h - ((k_dim - 1) / 2) + k_h;
-                            if ((row_i >= 0) && (row_i < Rows) && (col_i >= 0) && (col_i < Columns) && (height_i >= 0) && (height_i < Height)) {
-                                results[h*Columns*Rows+r*Columns + c] += (M[k_h*k_dim*k_dim + k_r*k_dim + k_c] * N[height_i*Columns*Rows + row_i*Columns + col_i]);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-    free(results);
-    return;
-}
 
 
 __constant__ float Mc[1024];
@@ -220,11 +191,6 @@ int main(int argc, char** argv)
         printf("%d\n", err);
     }
     
-    clock_t cpu_start, cpu_end;
-    cpu_start = clock();
-    sequential(input, kernel, h_out, i_y, i_x, i_z, k_dim);
-    cpu_end = clock();
-    printf("Execution time for CPU: %.f\n", (double)(cpu_end - cpu_start));
     printf("Execution time for CUDA: %.f\n", (double)(gpu_end - gpu_start));
 
 

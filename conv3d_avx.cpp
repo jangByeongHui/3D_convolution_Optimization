@@ -8,56 +8,6 @@
 #include <string.h>
 #include <time.h>
 
-#define MASK_WIDTH 5
-#define TILE_SIZE 4
-void verification(const float *N, const float *M, const float *P, int Rows, int Columns, int Height, int k_dim) {
-    int r, c, h, k_r, k_c, k_h;
-    int row_i, col_i, height_i;
-    bool equal;
-    float* results;
-
-    results = (float*)malloc(Height * Rows * Columns * sizeof(float));
-    memset(results, 0, Height * Rows * Columns * sizeof(float));
-    long long start = __rdtsc();
-    for(h = 0; h < Height; h++){
-        for (r = 0; r < Rows; r++) {
-            for (c = 0; c < Columns; c++) {
-                for(k_h = 0; k_h < k_dim; k_h++){
-                    for (k_r = 0; k_r < k_dim; k_r++) {
-                        for (k_c = 0; k_c < k_dim; k_c++) {
-                            row_i = r - ((k_dim - 1) / 2) + k_r;
-                            col_i = c - ((k_dim - 1) / 2) + k_c;
-                            height_i = h - ((k_dim - 1) / 2) + k_h;
-                            if ((row_i >= 0) && (row_i < Rows) && (col_i >= 0) && (col_i < Columns) && (height_i >= 0) && (height_i < Height)) {
-                                results[h*Columns*Rows+r*Columns + c] += (M[k_h*k_dim*k_dim + k_r*k_dim + k_c] * N[height_i*Columns*Rows + row_i*Columns + col_i]);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-    long long end = __rdtsc();
-    printf("Sequential execution time: %llu\n", end - start);
-    equal = true;
-    for (int i = 0; i < Height * Rows * Columns && equal; i++) {
-        if (abs(results[i] - P[i]) >= 0.001f) {
-            equal = false;
-            //printf("cuda: %f cpu: %f\n", results[i], P[i]);
-            printf("NOT EQUAL!\n");
-        }
-    }
-
-    if (equal) {
-        printf("Results are equal!\n");
-    }
-    else {
-        printf("Results are NOT equal!\n");
-    }
-
-    free(results);
-    return;
-}
 __m256i masktable_m256(int k);
 __m128i masktable_m128(int k);
 __m128 _mm256d_sum(__m256d hi, __m256d lo);
@@ -201,12 +151,12 @@ int main(int argc,char **argv){
                     intput_p_z, outdepth, k_dim,
                     0, input_padd, result, kernel);
                     
-    verification(input,kernel,result,i_y, i_x, i_z,k_dim);
+    
     int err = 0;
     int good=0;
     for(int i=0;i<o_x*o_y*o_z;i++){
         
-        if(abs(result[i] - output[i])>0.001f){
+        if(abs(result[i] - output[i])>0.00001f){
             //printf("result[%d]:%f  output[%d]:%f\n",i,result[i],i,output[i]);
             err++;
         }else{
@@ -400,36 +350,33 @@ void convolution_3d(unsigned int inwidth, unsigned int outwidth, unsigned int kw
         
     const unsigned int inmap_offset = inwidth * inheight * indepth * th, outmap_offset =  outwidth * outheight * outdepth * th;
     const unsigned int inch_sep = 1 & ~7u, inch_rem = 1 - inch_sep;
-    printf("inch_sep: %d inch_rem: %d\n",inch_sep,inch_rem);
     const __m256i mask = masktable_m256(inch_rem);
     const __m128i mask1 = masktable_m128(1);
 
     inmap_ptr += inmap_offset;
     outmap_ptr += outmap_offset;
-    int temp=kdepth;
+
     long long start = __rdtsc();
     for (unsigned int oz = 0; oz< outdepth; oz++) {
         for (unsigned int oy = 0; oy < outheight; oy++) {
             for (unsigned int ox = 0; ox < outwidth; ox++) {
 
                 __m256d uv_hi = _mm256_setzero_pd(), uv_lo = _mm256_setzero_pd();
-
                 for (unsigned int kz = 0, iz = oz ; kz < kdepth; kz++, iz++) {
                     for (unsigned int ky = 0, iy = oy; ky < kheight; ky++, iy++) {
                         for (unsigned int kx = 0, ix = ox; kx < kwidth; kx++, ix++) {
-                            if (inch_rem > 0) {
-                                    __m256 u = _mm256_maskload_ps(inmap_ptr + inch_sep + (ix + inwidth * (iy + inheight * iz)), mask);
-                                    __m256 v = _mm256_maskload_ps(kernel_ptr + inch_sep + ((kx + kwidth * (ky + kheight * kz))), mask);
 
-                                    __m256d u_hi = _mm256_cvtps_pd(_mm256_extractf128_ps(u, 1));
-                                    __m256d u_lo = _mm256_cvtps_pd(_mm256_castps256_ps128(u));
+                                __m256 u = _mm256_maskload_ps(inmap_ptr + inch_sep + (ix + inwidth * (iy + inheight * iz)), mask);
+                                __m256 v = _mm256_maskload_ps(kernel_ptr + inch_sep + ((kx + kwidth * (ky + kheight * kz))), mask);
 
-                                    __m256d v_hi = _mm256_cvtps_pd(_mm256_extractf128_ps(v, 1));
-                                    __m256d v_lo = _mm256_cvtps_pd(_mm256_castps256_ps128(v));
+                                __m256d u_hi = _mm256_cvtps_pd(_mm256_extractf128_ps(u, 1));
+                                __m256d u_lo = _mm256_cvtps_pd(_mm256_castps256_ps128(u));
 
-                                    uv_hi = _mm256_fmadd_pd(u_hi, v_hi, uv_hi);
-                                    uv_lo = _mm256_fmadd_pd(u_lo, v_lo, uv_lo);
-                            }
+                                __m256d v_hi = _mm256_cvtps_pd(_mm256_extractf128_ps(v, 1));
+                                __m256d v_lo = _mm256_cvtps_pd(_mm256_castps256_ps128(v));
+
+                                uv_hi = _mm256_fmadd_pd(u_hi, v_hi, uv_hi);
+                                uv_lo = _mm256_fmadd_pd(u_lo, v_lo, uv_lo);
                         }
                     }
                 }

@@ -3,7 +3,11 @@
 make:
 	nvcc conv3d.cu -o conv3d
 
-	g++ -mavx2 -mfma -o avx_conv3d avx_conv3d.cpp
+	g++ -mavx2 -mfma -o conv3d_avx conv3d_avx.cpp
+
+	g++ -mavx2 -mfma -o conv3d_avx_mul conv3d_avx_mul.cpp -lpthread
+
+
 cuda:
 	nvcc conv3d.cu -o conv3d
 avx:
@@ -11,43 +15,27 @@ avx:
 avx_mul:
 	g++ -mavx2 -mfma -o conv3d_avx_mul conv3d_avx_mul.cpp -lpthread
 
-test:
-	./conv3d_avx_mul -a
-	./conv3d_avx_mul -b
-	./conv3d_avx_mul -c
-	./conv3d_avx_mul -d
-	./conv3d_avx_mul -e
-
-
 test1:
 	./conv3d -a
-test2:
 	./conv3d -b
-test3:
 	./conv3d -c
-test4:
 	./conv3d -d
-test5:
 	./conv3d -e
 
-atest1:
-	./conv3d_avx -a
-atest2:
-	./conv3d_avx -b
-atest3:
-	./conv3d_avx -c
-atest4:
-	./conv3d_avx -d
-atest5:
-	./conv3d_avx -e
-
-all2:
+test2:
 	./conv3d_avx -a
 	./conv3d_avx -b
 	./conv3d_avx -c
 	./conv3d_avx -d
 	./conv3d_avx -e
 	
+test3:
+	./conv3d_avx_mul -a
+	./conv3d_avx_mul -b
+	./conv3d_avx_mul -c
+	./conv3d_avx_mul -d
+	./conv3d_avx_mul -e
+
 
 all:
 	./conv3d -a
