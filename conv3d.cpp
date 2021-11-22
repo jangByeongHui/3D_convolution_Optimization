@@ -457,5 +457,5 @@ void convolution_3d(unsigned int inchannels, unsigned int outchannels,
         }
     }
     long long end = __rdtsc();
-    printf("AVX execution time: %llu\n", end - start);
+    printf("AVX execution time: %llu\n", (double)(end - start)/12008160);
 }

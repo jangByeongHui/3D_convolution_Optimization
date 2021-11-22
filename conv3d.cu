@@ -10,7 +10,6 @@
 #define TILE_SIZE 4
 
 
-
 __constant__ float Mc[1024];
 
 __global__ void Convolution3d(float* input, float* output, int numARows, int numACols, int numAHeight, int numCRows, int numCCols, int numCHeight, int k_dim)
@@ -113,8 +112,6 @@ int main(int argc, char** argv)
     int i_x,i_y,i_z;
     int o_x,o_y,o_z;
     int k_dim;
-    //cudaEvent_t start, end;
-    //float time_ms = 0;
     
     fscanf(input_file,"%d %d %d",&i_z,&i_y,&i_x);
     input=(float*)malloc(sizeof(float)*i_x*i_y*i_z);
@@ -149,15 +146,19 @@ int main(int argc, char** argv)
     int blocksize = TILE_SIZE + (k_dim - 1);
     dim3 dimGrid(ceil(i_x/(TILE_SIZE*1.0)), ceil(i_y/(TILE_SIZE*1.0)), ceil(i_z/(TILE_SIZE*1.0)));
     dim3 dimBlock(blocksize, blocksize, blocksize);
-
-    clock_t gpu_start, gpu_end;
-    //cudaEventCreate(&start);
-	//cudaEventCreate(&end);
+    cudaEvent_t start, end;
+    float elapsedTime;
+    cudaEventCreate(&start);
+	cudaEventCreate(&end);
     
-    //cudaEventRecord(start, 0);
-    gpu_start = clock();
+    cudaEventRecord(start);
     Convolution3d<<<dimGrid, dimBlock>>>(d_input, d_out, i_y, i_x, i_z, o_y, o_x, o_z, k_dim);
-    gpu_end = clock();
+    cudaEventRecord(end);
+    cudaEventSynchronize(end);
+    cudaEventElapsedTime(&elapsedTime, start, end);
+    printf("Execution time for CUDA: %.3fms\n", elapsedTime);
+    cudaEventDestroy(start);
+    cudaEventDestroy(end);
     //cudaEventRecord(end,0);
 	//cudaEventSynchronize(end);
 	//cudaEventElapsedTime(&time_ms, start, end);
@@ -191,8 +192,7 @@ int main(int argc, char** argv)
         printf("%d\n", err);
     }
     
-    printf("Execution time for CUDA: %.f\n", (double)(gpu_end - gpu_start));
-
+    
 
 	return EXIT_SUCCESS;
 }

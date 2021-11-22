@@ -209,7 +209,7 @@ int main(int argc,char **argv){
     }
     long long end = __rdtsc();
 
-    printf("Thread execution time: %llu\n", end - start);
+    printf("Multiple Thread AVX execution time: %fms\n", (double)(end - start)/12008160);
 
     /*
     convolution_3d(1, 1, 
@@ -455,7 +455,7 @@ void convolution_3d(unsigned int inwidth, unsigned int outwidth, unsigned int kw
         }
     }
     long long end = __rdtsc();
-    printf("Multiple Thread AVX execution time: %llu\n", end - start);
+    printf("Multiple Thread AVX execution time: %fms\n", (double)(end - start)/12008160);
 }
 
 void* workerThread(void* workerpara) {

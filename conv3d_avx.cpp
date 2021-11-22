@@ -138,20 +138,20 @@ int main(int argc,char **argv){
     unsigned int outheight =(intput_p_y - k_dim ) + 1;
     unsigned int outdepth = (intput_p_z - k_dim ) + 1;
     
-    printf("output size:%d %d %d\n",outwidth,outheight,outdepth);
     // convolution_3d(unsigned int inchannels, unsigned int outchannels, 
     //                 unsigned int inwidth, unsigned int outwidth, unsigned int kwidth,
     //                 unsigned int inheight, unsigned int outheight, unsigned int kheight,
     //                 unsigned int indepth, unsigned int outdepth, unsigned int kdepth,
     //                 unsigned stride, unsigned int th, 
     //                 float* inmap_ptr, float* outmap_ptr, float* kernel_ptr);
-
+    long long start = __rdtsc();
      convolution_3d(intput_p_x, outwidth, k_dim,
                     intput_p_y, outheight, k_dim,
                     intput_p_z, outdepth, k_dim,
                     0, input_padd, result, kernel);
                     
-    
+    long long end = __rdtsc();
+    printf("AVX execution time: %fms\n", (double)(end - start)/12008160);
     int err = 0;
     int good=0;
     for(int i=0;i<o_x*o_y*o_z;i++){
@@ -356,7 +356,6 @@ void convolution_3d(unsigned int inwidth, unsigned int outwidth, unsigned int kw
     inmap_ptr += inmap_offset;
     outmap_ptr += outmap_offset;
 
-    long long start = __rdtsc();
     for (unsigned int oz = 0; oz< outdepth; oz++) {
         for (unsigned int oy = 0; oy < outheight; oy++) {
             for (unsigned int ox = 0; ox < outwidth; ox++) {
@@ -384,6 +383,4 @@ void convolution_3d(unsigned int inwidth, unsigned int outwidth, unsigned int kw
             }
         }
     }
-    long long end = __rdtsc();
-    printf("AVX execution time: %llu\n", end - start);
 }
