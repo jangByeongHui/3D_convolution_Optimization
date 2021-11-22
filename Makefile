@@ -8,9 +8,15 @@ cuda:
 	nvcc conv3d.cu -o conv3d
 avx:
 	g++ -mavx2 -mfma -o conv3d_avx conv3d_avx.cpp
+avx_mul:
+	g++ -mavx2 -mfma -o conv3d_avx_mul conv3d_avx_mul.cpp -lpthread
 
 test:
-	./conv3d_avx -a
+	./conv3d_avx_mul -a
+	./conv3d_avx_mul -b
+	./conv3d_avx_mul -c
+	./conv3d_avx_mul -d
+	./conv3d_avx_mul -e
 
 
 test1:
@@ -51,4 +57,4 @@ all:
 	./conv3d -e
 
 clean:
-	rm -rf conv3d conv3d_avx
+	rm -rf conv3d conv3d_avx conv3d_avx_mul
